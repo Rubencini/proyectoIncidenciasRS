@@ -16,12 +16,17 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
         Map<String, String> errores = new HashMap<>();
-
-        // Un mensaje por cada campo que no cumple sus validaciones
         ex.getBindingResult().getFieldErrors()
                 .forEach(error -> errores.put(error.getField(), error.getDefaultMessage()));
-
         return ResponseEntity.badRequest().body(errores);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<Map<String, String>> handleJsonIlegible(HttpMessageNotReadableException ex) {
+        return ResponseEntity.badRequest()
+                .body(Map.of("error", "El cuerpo de la petición no es válido. "
+                        + "Estados admitidos: ABIERTA, EN_PROCESO, RESUELTA. "
+                        + "Roles admitidos: ROLE_USER, ROLE_TECNICO, ROLE_ADMIN"));
     }
 
     @ExceptionHandler(IncidenciaNotFoundException.class)
@@ -29,9 +34,10 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(Map.of("error", ex.getMessage()));
     }
-    @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<Map<String, String>> handleJsonIlegible(HttpMessageNotReadableException ex) {
-        return ResponseEntity.badRequest()
-                .body(Map.of("error", "El cuerpo de la petición no es válido. Para el estado, los valores admitidos son ABIERTA, EN_PROCESO y RESUELTA"));
+
+    @ExceptionHandler(UsuarioNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleUsuarioNotFound(UsuarioNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("error", ex.getMessage()));
     }
 }

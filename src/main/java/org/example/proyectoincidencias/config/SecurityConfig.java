@@ -35,6 +35,7 @@ public class SecurityConfig {
 
                 // Qué rutas son públicas y cuáles exigen autenticación o un rol
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/", "/index.html", "/css/**", "/js/**").permitAll()
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
