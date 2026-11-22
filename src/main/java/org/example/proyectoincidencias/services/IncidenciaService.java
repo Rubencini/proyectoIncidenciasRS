@@ -3,6 +3,7 @@ package org.example.proyectoincidencias.services;
 import lombok.RequiredArgsConstructor;
 import org.example.proyectoincidencias.dto.IncidenciaRequest;
 import org.example.proyectoincidencias.dto.IncidenciaResponse;
+import org.example.proyectoincidencias.entities.EstadoIncidencia;
 import org.example.proyectoincidencias.entities.Incidencia;
 import org.example.proyectoincidencias.entities.Usuario;
 import org.example.proyectoincidencias.exception.IncidenciaNotFoundException;
@@ -63,6 +64,24 @@ public class IncidenciaService {
         return IncidenciaResponse.from(
                 incidencia.orElseThrow(() -> new IncidenciaNotFoundException(id))
         );
+    }
+    //Usamos metodo findById sin filtrar por usuario porque quien llega a este
+    //metodo es tecnico o admin y tiene acceso a todas las incidencias
+    //La restriccion de rol esta en el controlador
+    public IncidenciaResponse cambiarEstado(Long id, EstadoIncidencia nuevoEstado) {
+        Incidencia incidencia = incidenciaRepository.findById(id)
+                .orElseThrow(() -> new IncidenciaNotFoundException(id));
+
+        incidencia.setEstado(nuevoEstado);
+
+        return IncidenciaResponse.from(incidenciaRepository.save(incidencia));
+    }
+  //Solo lo puede Hacer un admin , restriccion en controlador
+    public void eliminar(Long id) {
+        if (!incidenciaRepository.existsById(id)) {
+            throw new IncidenciaNotFoundException(id);
+        }
+        incidenciaRepository.deleteById(id);
     }
 
     // TECNICO y ADMIN pueden ver incidencias de cualquier autor
