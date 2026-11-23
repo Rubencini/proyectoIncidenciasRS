@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Incidencias del centro</title>
+    <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+<h1>Incidencias del centro</h1>
+
+<!-- Aquí se muestran los errores y avisos de la API -->
+<p id="mensaje" class="oculto"></p>
+
+<!-- Pantalla sin sesión -->
+<section id="seccion-auth">
+    <div class="tarjeta">
+        <h2>Iniciar sesión</h2>
+        <form id="form-login">
+            <input type="email" id="login-email" placeholder="Email" required>
+            <input type="password" id="login-password" placeholder="Contraseña" required>
+            <button type="submit">Entrar</button>
+        </form>
+    </div>
+
+    <div class="tarjeta">
+        <h2>Registrarse</h2>
+        <form id="form-registro">
+            <input type="text" id="registro-nombre" placeholder="Nombre" required>
+            <input type="email" id="registro-email" placeholder="Email" required>
+            <input type="password" id="registro-password" placeholder="Contraseña (mínimo 6)" required>
+            <button type="submit">Crear cuenta</button>
+        </form>
+    </div>
+</section>
+
+<!-- Pantalla con sesión -->
+<section id="seccion-app" class="oculto">
+    <div class="barra">
+        <span id="info-usuario"></span>
+        <button id="btn-logout">Cerrar sesión</button>
+    </div>
+    <div class="tarjeta">
+        <h2>Nueva incidencia</h2>
+        <form id="form-incidencia">
+            <input type="text" id="inc-titulo" placeholder="Título" maxlength="255" required>
+            <textarea id="inc-descripcion" placeholder="Descripción" maxlength="1000" rows="3" required></textarea>
+            <button type="submit">Crear incidencia</button>
+        </form>
+    </div>
+
+    <h2>Incidencias</h2>
+    <table id="tabla-incidencias">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Título</th>
+            <th>Autor</th>
+            <th>Fecha</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+        </tr>
+        </thead>
+        <tbody id="lista-incidencias"></tbody>
+    </table>
+    <p id="sin-incidencias" class="oculto">No hay incidencias.</p>
+    <div class="tarjeta">
+        <h2>Consultar incidencia por número</h2>
+        <form id="form-buscar">
+            <input type="number" id="buscar-id" placeholder="Número de incidencia" min="1" required>
+            <button type="submit">Consultar</button>
+        </form>
+    </div>
+
+    <div id="detalle" class="tarjeta oculto">
+        <h2 id="detalle-titulo"></h2>
+        <p id="detalle-meta"></p>
+        <p id="detalle-descripcion"></p>
+    </div>
+</section>
+
+<script src="js/app.js"></script>
+</body>
+</html>
