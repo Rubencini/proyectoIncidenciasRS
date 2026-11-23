@@ -1,5 +1,14 @@
 const TOKEN_KEY = "jwt";
 
+let rolesUsuario = []; // roles del token actual, solo para decidir qué botones mostrar
+
+function esPersonal() {
+    return rolesUsuario.includes("ROLE_TECNICO") || rolesUsuario.includes("ROLE_ADMIN");
+}
+
+function esAdmin() {
+    return rolesUsuario.includes("ROLE_ADMIN");
+}
 // ---------- Token ----------
 
 function guardarToken(token) {
@@ -97,17 +106,43 @@ function crearFila(incidencia) {
 
     valores.forEach(valor => {
         const celda = document.createElement("td");
-        celda.textContent = valor; // textContent: el texto se muestra tal cual, nunca como HTML
+        celda.textContent = valor;
         fila.appendChild(celda);
     });
 
     const celdaAcciones = document.createElement("td");
+    const acciones = document.createElement("div");
+    acciones.className = "acciones";
 
+    // Todos los usuarios: ver el detalle
     const botonVer = document.createElement("button");
     botonVer.textContent = "Ver";
     botonVer.addEventListener("click", () => verIncidencia(incidencia.id));
-    celdaAcciones.appendChild(botonVer);
+    acciones.appendChild(botonVer);
 
+    // Solo técnico y admin: desplegable para cambiar el estado
+    if (esPersonal()) {
+        const selector = document.createElement("select");
+        ["ABIERTA", "EN_PROCESO", "RESUELTA"].forEach(estado => {
+            const opcion = document.createElement("option");
+            opcion.value = estado;
+            opcion.textContent = estado;
+            opcion.selected = estado === incidencia.estado;
+            selector.appendChild(opcion);
+        });
+        selector.addEventListener("change", () => cambiarEstado(incidencia.id, selector.value));
+        acciones.appendChild(selector);
+    }
+
+    // Solo admin: botón de eliminar
+    if (esAdmin()) {
+        const botonEliminar = document.createElement("button");
+        botonEliminar.textContent = "Eliminar";
+        botonEliminar.addEventListener("click", () => eliminarIncidencia(incidencia.id));
+        acciones.appendChild(botonEliminar);
+    }
+
+    celdaAcciones.appendChild(acciones);
     fila.appendChild(celdaAcciones);
     return fila;
 }
@@ -177,6 +212,39 @@ function buscarIncidencia(evento) {
     verIncidencia(document.getElementById("buscar-id").value);
 }
 
+async function cambiarEstado(id, nuevoEstado) {
+    ocultarMensaje();
+
+    const resultado = await llamarApi("/incidencias/" + id + "/estado", {
+        method: "PATCH",
+        body: JSON.stringify({ estado: nuevoEstado })
+    });
+
+    if (resultado.ok) {
+        mostrarMensaje("Estado actualizado a " + nuevoEstado + ".", "ok");
+    }
+
+    ocultarDetalle();
+    // Se recarga siempre: si la operación fue rechazada, el desplegable vuelve al valor real
+    cargarIncidencias();
+}
+
+async function eliminarIncidencia(id) {
+    if (!confirm("¿Seguro que quieres eliminar la incidencia " + id + "?")) {
+        return;
+    }
+    ocultarMensaje();
+
+    const resultado = await llamarApi("/incidencias/" + id, { method: "DELETE" });
+
+    if (resultado.ok) {
+        mostrarMensaje("Incidencia eliminada.", "ok");
+    }
+
+    ocultarDetalle();
+    cargarIncidencias();
+}
+
 // ---------- Vista ----------
 
 function actualizarVista() {
@@ -202,9 +270,12 @@ function actualizarVista() {
     document.getElementById("seccion-app").classList.toggle("oculto", !hayssesion);
 
     if (hayssesion) {
+        rolesUsuario = payload.roles;
         document.getElementById("info-usuario").textContent =
             payload.nombre + " (" + payload.sub + ") - " + payload.roles.join(", ");
         cargarIncidencias();
+    }else {
+        rolesUsuario = [];
     }
 }
 
