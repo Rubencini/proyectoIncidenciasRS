@@ -2,6 +2,8 @@ const TOKEN_KEY = "jwt";
 
 let rolesUsuario = []; // roles del token actual, solo para decidir qué botones mostrar
 
+let emailUsuario = ""; // email del usuario conectado (el "sub" del token)
+
 function esPersonal() {
     return rolesUsuario.includes("ROLE_TECNICO") || rolesUsuario.includes("ROLE_ADMIN");
 }
@@ -244,6 +246,68 @@ async function eliminarIncidencia(id) {
     ocultarDetalle();
     cargarIncidencias();
 }
+// ---------- Administración de usuarios ----------
+
+const ROLES = ["ROLE_USER", "ROLE_TECNICO", "ROLE_ADMIN"];
+
+function crearFilaUsuario(usuario) {
+    const fila = document.createElement("tr");
+
+    [usuario.id, usuario.nombre, usuario.email, usuario.roles].forEach(valor => {
+        const celda = document.createElement("td");
+        celda.textContent = valor;
+        fila.appendChild(celda);
+    });
+
+    const celdaRol = document.createElement("td");
+    const selector = document.createElement("select");
+    ROLES.forEach(rol => {
+        const opcion = document.createElement("option");
+        opcion.value = rol;
+        opcion.textContent = rol;
+        opcion.selected = rol === usuario.roles;
+        selector.appendChild(opcion);
+    });
+
+    // Comodidad: evitamos que el admin se quite el rol a sí mismo por error.
+    // Ojo: esto es solo del frontend, el backend no lo impide.
+    if (usuario.email === emailUsuario) {
+        selector.disabled = true;
+    }
+
+    selector.addEventListener("change", () => cambiarRol(usuario.id, selector.value));
+    celdaRol.appendChild(selector);
+    fila.appendChild(celdaRol);
+
+    return fila;
+}
+
+async function cargarUsuarios() {
+    const resultado = await llamarApi("/admin/usuarios");
+    if (!resultado.ok) {
+        return;
+    }
+
+    const cuerpo = document.getElementById("lista-usuarios");
+    cuerpo.replaceChildren();
+    resultado.datos.forEach(usuario => cuerpo.appendChild(crearFilaUsuario(usuario)));
+}
+
+async function cambiarRol(id, nuevoRol) {
+    ocultarMensaje();
+
+    const resultado = await llamarApi("/admin/usuarios/" + id + "/rol", {
+        method: "PATCH",
+        body: JSON.stringify({ rol: nuevoRol })
+    });
+
+    if (resultado.ok) {
+        mostrarMensaje("Rol actualizado a " + nuevoRol + ".", "ok");
+    }
+
+    // Se recarga siempre para mostrar el valor real guardado en el servidor
+    cargarUsuarios();
+}
 
 // ---------- Vista ----------
 
@@ -271,11 +335,19 @@ function actualizarVista() {
 
     if (hayssesion) {
         rolesUsuario = payload.roles;
+        emailUsuario = payload.sub;
         document.getElementById("info-usuario").textContent =
             payload.nombre + " (" + payload.sub + ") - " + payload.roles.join(", ");
         cargarIncidencias();
-    }else {
+
+        // el panel solo se muestra y se carga si el rol es administrador
+        document.getElementById("panel-admin").classList.toggle("oculto", !esAdmin());
+        if (esAdmin()) {
+            cargarUsuarios();
+        }
+    } else {
         rolesUsuario = [];
+        emailUsuario = "";
     }
 }
 
@@ -333,6 +405,7 @@ function cerrarSesion() {
     borrarToken();
     ocultarMensaje();
     document.getElementById("lista-incidencias").replaceChildren();
+    document.getElementById("lista-usuarios").replaceChildren();
     ocultarDetalle();
     actualizarVista();
 }
